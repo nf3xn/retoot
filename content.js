@@ -7,6 +7,28 @@ if (!retoots) {
   retoots = new Map();
 }
 
+const textarea = document.querySelector('textarea');
+textarea.addEventListener('paste', function(event) {
+
+  // Get the clipboard data
+  const clipboardData = event.clipboardData;
+
+  // Check if the clipboard data contains an image
+  if (clipboardData.items[0].type.startsWith('image/')) {
+    // Get the image data as a blob
+    const imageBlob = clipboardData.items[0].getAsFile();
+
+    // Use the image data as needed (e.g., upload it)
+    // ...
+    console.log(imageBlob.size);
+    try {
+      document.execCommand('paste');
+    } catch {
+      console.log('execCommand paste failed')
+    }
+  }
+});
+
 document.addEventListener("DOMNodeInserted", event => {
   if (event.target.querySelector) {
     const actionBar = event.target.querySelector(".status__action-bar");
@@ -24,9 +46,7 @@ document.addEventListener("DOMNodeInserted", event => {
       }
 
       // Add a click event listener 
-      button.addEventListener("click", async event => {
-        await handleClick(event);
-      });
+      button.addEventListener("click", handleClick);
 
       // Insert the 💬 button as the second button in the action bar
       const firstButton = actionBar.querySelector("button");
@@ -37,7 +57,7 @@ document.addEventListener("DOMNodeInserted", event => {
 
 async function handleClick(event) {
   // Get the article's unique ID
-  const statusId = event.target.closest("article")?.dataset?.id;
+  const statusId = event.target.closest("div").parentElement.dataset?.id;
   if (statusId) {
     // Check if the article has already been retooted
     if (retoots.has(statusId)) {
@@ -47,39 +67,41 @@ async function handleClick(event) {
     const div = document.querySelector(`div[data-id="${statusId}"]`);
     if (div) {
       // Take a screenshot of the div element using html2canvas
-      const canvas = await html2canvas(div);
+      const canvas = await html2canvas(div, {scale: .75, quality: 1, logging: true});
 
-      // Get the canvas data as a data URI
-      const dataUri = canvas.toDataURL();
-
-      // Create an image element
-      const img = document.createElement('img');
-      img.src = dataUri;
+      // Get the canvas data as a PNG data URL
+      const dataUri = canvas.toDataURL('image/png');
 
       // Create a Blob object from the data URI
-      const blob = new Blob([dataUri], { type: 'image/png' });
-      const clip = new ClipboardItem({'image/png': blob});
+      const blob = dataURLtoBlob(dataUri);
 
-      // Copy the image data to the clipboard
-      await navigator.clipboard.write([clip]).then(() => {
-        console.log('Image data copied to clipboard');
+      // Create a ClipboardItem object from the blob
+      const clip = new ClipboardItem({ 'image/png': blob });
+
+      // Set the onload event handler to copy the data to the clipboard
+      navigator.clipboard.write([clip]).then(() => {
+        console.log('PNG data copied to clipboard');
 
         // Get the textarea element
-        const textarea = document.querySelector('textarea');
         if (textarea) {
           // Simulate a paste event on the textarea element
-          const pasteEvent = new ClipboardEvent('paste', {
-            clipboardData: new DataTransfer(),
-            bubbles: true,
-            cancelable: true,
-          });
-          pasteEvent.clipboardData.items.add(new File([dataUri], 'screenshot.png'));
+          const pasteEvent = new Event('paste');
+
+          // Set the data property of the paste event to the clipboard data
+          pasteEvent.clipboardData = {
+            items: [{
+              type: 'image/png',
+              getAsFile: () => new File([blob], 'screenshot.png'),
+            }],
+          };
+
+          // Dispatch the paste event on the textarea element
           textarea.dispatchEvent(pasteEvent);
         } else {
-          console.error('No textarea element was found.');
+          console.error('Could not find the textarea');
         }
       }).catch((error) => {
-        console.error('Failed to copy image data to clipboard:', error);
+        console.error(`Failed: blob type ${blob.type} size ${blob.size}\n ${error})`);
       });
     } else {
       console.log(`No element with data-id "${statusId}" was found.`);
@@ -89,14 +111,13 @@ async function handleClick(event) {
   }
 }
 
-function logPermalink() {
-  // Find the permalink element
-  const baseUrl = 'https://mastodon.social';
-  const permalinkElement = statusDiv.querySelector('div.status__info > a');
-  if (permalinkElement) {
-    // Get the relative permalink from the href attribute
-    const relativePermalink = permalinkElement.getAttribute('href');
-    const permalink = `${baseUrl}${relativePermalink}`;
-    console.log(permalink); // This will print the permalink to the console
+function dataURLtoBlob(dataURL) {
+  const [, base64] = dataURL.split(',');
+  const byteString = atob(base64);
+  const arrayBuffer = new ArrayBuffer(byteString.length);
+  const int8Array = new Uint8Array(arrayBuffer);
+  for (let i = 0; i < byteString.length; i++) {
+    int8Array[i] = byteString.charCodeAt(i);
   }
+  return new Blob([int8Array], { type: 'image/png' });
 }
