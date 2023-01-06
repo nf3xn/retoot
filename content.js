@@ -72,12 +72,6 @@ async function handleClick(event) {
       const windowOffsetX = rect.left + window.scrollX;
       const windowOffsetY = rect.top + window.scrollY;
 
-      // Scroll the webpage to the desired position
-      window.scrollTo(0, windowOffsetY);
-
-      // Wait for the webpage to finish scrolling
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
       // Send a message to the background service worker to request a screenshot
       const response = await new Promise((resolve) => {
         chrome.runtime.sendMessage({ screenshot: true }, resolve);
