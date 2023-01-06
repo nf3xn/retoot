@@ -1,14 +1,10 @@
-const script = document.createElement('script');
-script.src = chrome.runtime.getURL('html2canvas.min.js');
-document.head.appendChild(script);
-
 let retoots = new Map(JSON.parse(localStorage.getItem("retoots")));
 if (!retoots) {
   retoots = new Map();
 }
 
 const textarea = document.querySelector('textarea');
-textarea.addEventListener('paste', function(event) {
+textarea.addEventListener('paste', function (event) {
 
   // Get the clipboard data
   const clipboardData = event.clipboardData;
@@ -31,6 +27,7 @@ textarea.addEventListener('paste', function(event) {
 
 document.addEventListener("DOMNodeInserted", event => {
   if (event.target.querySelector) {
+    
     const actionBar = event.target.querySelector(".status__action-bar");
 
     if (actionBar && !actionBar.querySelector(".retoot")) {
@@ -66,43 +63,87 @@ async function handleClick(event) {
 
     const div = document.querySelector(`div[data-id="${statusId}"]`);
     if (div) {
-      // Take a screenshot of the div element using html2canvas
-      const canvas = await html2canvas(div, {scale: .75, quality: 1, logging: true});
+      // get the dimensions of the selected div
+      const rect = div.getBoundingClientRect();
+      const divWidth = rect.width;
+      const divHeight = rect.height;
 
-      // Get the canvas data as a PNG data URL
-      const dataUri = canvas.toDataURL('image/png');
+      // get the window offset of the selected div
+      const windowOffsetX = rect.left + window.scrollX;
+      const windowOffsetY = rect.top + window.scrollY;
 
-      // Create a Blob object from the data URI
-      const blob = dataURLtoBlob(dataUri);
+      // Scroll the webpage to the desired position
+      window.scrollTo(0, windowOffsetY);
 
-      // Create a ClipboardItem object from the blob
-      const clip = new ClipboardItem({ 'image/png': blob });
+      // Wait for the webpage to finish scrolling
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Set the onload event handler to copy the data to the clipboard
-      navigator.clipboard.write([clip]).then(() => {
-        console.log('PNG data copied to clipboard');
-
-        // Get the textarea element
-        if (textarea) {
-          // Simulate a paste event on the textarea element
-          const pasteEvent = new Event('paste');
-
-          // Set the data property of the paste event to the clipboard data
-          pasteEvent.clipboardData = {
-            items: [{
-              type: 'image/png',
-              getAsFile: () => new File([blob], 'screenshot.png'),
-            }],
-          };
-
-          // Dispatch the paste event on the textarea element
-          textarea.dispatchEvent(pasteEvent);
-        } else {
-          console.error('Could not find the textarea');
-        }
-      }).catch((error) => {
-        console.error(`Failed: blob type ${blob.type} size ${blob.size}\n ${error})`);
+      // Send a message to the background service worker to request a screenshot
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ screenshot: true }, resolve);
       });
+
+      // Check for any errors in the response
+      if (response.error) {
+        console.error(response.error);
+        return;
+      } else {
+        console.log(`From response:\n ${response.dataUri}\n\n`);
+      }
+      console.log(windowOffsetX, windowOffsetY, divWidth, divHeight);
+
+      // create the canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = divWidth;
+      canvas.height = divHeight;
+      const context = canvas.getContext('2d');
+
+      // create the image element
+      const image = document.createElement('img');
+      image.onload = async function () {
+        // draw the image to the canvas starting at the top-left corner of the cropping region
+        context.drawImage(image, -windowOffsetX, -windowOffsetY);
+
+        console.log('Put cropped image');
+        // get the data URL of the cropped image
+        const dataUri = canvas.toDataURL();
+
+        console.log(`From canvas;\n ${dataUri}\n\n`);
+
+        // Create a Blob object from the data URI
+        const blob = dataURLtoBlob(dataUri);
+
+        // Create a ClipboardItem object from the blob
+        const clip = new ClipboardItem({ 'image/png': blob });
+
+        // Set the onload event handler to copy the data to the clipboard
+        navigator.clipboard.write([clip]).then(() => {
+          console.log('PNG data copied to clipboard');
+
+          // Get the textarea element
+          if (textarea) {
+            // Simulate a paste event on the textarea element
+            const pasteEvent = new Event('paste');
+
+            // Set the data property of the paste event to the clipboard data
+            pasteEvent.clipboardData = {
+              items: [{
+                type: 'image/png',
+                getAsFile: () => new File([blob], 'screenshot.png'),
+              }],
+            };
+
+            // Dispatch the paste event on the textarea element
+            textarea.dispatchEvent(pasteEvent);
+          } else {
+            console.error('Could not find the textarea');
+          }
+        }).catch((error) => {
+          console.error(`Failed: blob type ${blob.type} size ${blob.size}\n ${error})`);
+        });
+
+      }
+      image.src = response.dataUri;
     } else {
       console.log(`No element with data-id "${statusId}" was found.`);
     }

@@ -1,26 +1,29 @@
 {
   "manifest_version": 3,
   "name": "Mastodon Easy Retoot Extension",
-  "version": "1.0.0",
-  "web_accessible_resources": [
-    {
-      "resources": ["html2canvas.min.js"],
-      "matches": ["<all_urls>"],
-      "permissions": ["clipboardRead", "clipboardWrite"],
-      "use_dynamic_url": false
-    }
-  ],
+  "version": "0.0.1",
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
-      "js": ["content.js","html2canvas.min.js"]
+      "js": ["content.js"],
+      "permissions": ["<all_urls>","activeTab","runtime"]
     }
   ],
+  "background": {
+    "service_worker": "background.js"
+  },  
   "permissions": [
     "clipboardRead",
     "clipboardWrite",
     "activeTab",
-    "storage"
-  ]
+    "storage",
+    "scripting",
+    "desktopCapture",
+    "tabs"
+  ],
+  "host_permissions":[
+    "<all_urls>",
+    "https://*/",
+    "http://*/"
+  ]  
 }
