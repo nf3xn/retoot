@@ -6,6 +6,10 @@ A very basic chrome extension to add a button to the mastodon client to allow fo
 
 ![image](https://user-images.githubusercontent.com/88434068/211160474-93b3644a-566f-4bdf-bcbd-408b403b3be2.png)
 
-If you want to use it download and extract this repo. The open the folder with 'load unpacked'. There are errors now and again since Brave does not like the dirty hacks to get the paste working (I do it twice) and sometimes the Mastodon client destroys the eventListeners so just refresh the page. And if you have to scroll for ages to the post maybe just better to click on the detailed view... no wait that is a bit flaky too. Anyway you YMMV for a little while but I am going to keep at it to iron out all these 'little bugs'. Feel free to use, copy or whatever it's on you. 
+To use this extension, download and extract the repository, then open the folder using 'load unpacked' in the Extensions page [here](chrome://extensions). 
 
-But lastly DON'T RUN RANDOM SHIT FROM THE INTERNET unless you REVIEW the code, watch out for nasty fetching of stuff from weird domains and execCommand is just paste an image here but it could have been nasty shit. In short do you reeeeealllyyyy trust store bought Chrome Extensions? I wish it were otherwise but it is not. Vscode extensions (see other repo) and chrome extensions bypass security, can bait and switch you. Take care and weigh the risk. Always be asking: Is the convenience really worth it?
+You may see some errors that occur while using the extension due to its use of 'dirty hacks' and interference from the Mastodon client. If you encounter any issues, refreshing the page may resolve them. However, if you have to scroll for a long time to access certain posts, the extension may not work properly on those, but you can click on them and the detailed status view will work better, I hope. I am working to fix these bugs and improve the extension. 
+
+You are welcome to use, copy, or modify the extension as you see fit.
+
+However, it's always important to be careful when running any unknown code from the internet. Make sure to review the code of any extensions before using them, and watch out for any that may be fetching data from suspicious domains or using the 'execCommand' function. Keep in mind that Chrome extensions, as well as Visual Studio Code extensions, can potentially bypass security measures and pose a risk to your system. Consider whether the convenience they provide is worth the potential risks before using them. Always be cautious and carefully weigh the potential risks. Stay frosty.
