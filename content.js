@@ -4,26 +4,6 @@ if (!retoots) {
 }
 
 const textarea = document.querySelector('textarea');
-textarea.addEventListener('paste', function (event) {
-
-  // Get the clipboard data
-  const clipboardData = event.clipboardData;
-
-  // Check if the clipboard data contains an image
-  if (clipboardData.items[0].type.startsWith('image/')) {
-    // Get the image data as a blob
-    const imageBlob = clipboardData.items[0].getAsFile();
-
-    // Use the image data as needed (e.g., upload it)
-    // ...
-    console.log(imageBlob.size);
-    try {
-      document.execCommand('paste');
-    } catch {
-      console.log('execCommand paste failed')
-    }
-  }
-});
 
 document.addEventListener("DOMNodeInserted", event => {
   if (event.target.querySelector) {
@@ -76,13 +56,18 @@ async function handleClick(event) {
     button.classList.add("active", "activate");
   }
 
-  const div = document.querySelector(`div[data-id="${statusId}"]`) || event.target.closest(`div.status__wrapper`) || event.target.closest(`div.detailed-status__wrapper`);
+  const div = document.querySelector(`div[data-id="${statusId}"]`) || document.querySelector(`div.detailed-status`);
   if (div) {
     // get the dimensions of the selected div
     const rect = div.getBoundingClientRect();
-    const divWidth = rect.width;
-    const divHeight = rect.height;
+    const divWidth = rect.width; 
+    const divHeight = rect.height - 50; // we don't need to see the status bar again
 
+    // If we are on the detailed page, scroll to the top before taking the screenshot
+    if (document.querySelector(`div.detailed-status`)) {
+      window.scrollTo(0, 0);
+    }
+    
     // get the window offset of the selected div
     const viewportHeight = window.innerHeight;
     const windowOffsetX = rect.left + window.scrollX;
@@ -146,6 +131,8 @@ async function handleClick(event) {
 
           // Dispatch the paste event on the textarea element
           textarea.dispatchEvent(pasteEvent);
+
+          document.execCommand('paste');
         } else {
           console.error('Could not find the textarea');
         }
